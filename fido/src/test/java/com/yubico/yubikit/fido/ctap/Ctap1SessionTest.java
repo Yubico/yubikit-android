@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AttestedCredentialData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorData;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -118,6 +120,142 @@ public class Ctap1SessionTest {
     Assert.assertArrayEquals(coordinateY, (byte[]) credentialData.getCosePublicKey().get(-3));
 
     Assert.assertArrayEquals(signature, (byte[]) attestation.getAttestationStatement().get("sig"));
+  }
+
+  @Test
+  public void parsesValidRegistrationData() {
+    Ctap1Session.RegistrationData registrationData =
+        new Ctap1Session.RegistrationData(registrationData(KEY_HANDLE, CERTIFICATE));
+
+    Assert.assertEquals(65, registrationData.getPublicKey().length);
+    Assert.assertArrayEquals(KEY_HANDLE, registrationData.getKeyHandle());
+    Assert.assertArrayEquals(CERTIFICATE, registrationData.getCertificate());
+    Assert.assertArrayEquals(SIGNATURE, registrationData.getSignature());
+  }
+
+  @Test
+  public void rejectsRegistrationDataTruncatedAtEachField() {
+    byte[] valid = registrationData(KEY_HANDLE, CERTIFICATE);
+    int keyHandleLengthOffset = 1 + 65;
+    int certificateOffset = keyHandleLengthOffset + 1 + KEY_HANDLE.length;
+    int[] truncatedLengths = {
+      0, // no reserved byte
+      1, // no public key
+      keyHandleLengthOffset - 1, // partial public key
+      keyHandleLengthOffset, // no key handle length
+      keyHandleLengthOffset + 1 + KEY_HANDLE.length - 1, // partial key handle
+      certificateOffset, // no certificate
+      certificateOffset + 1, // certificate tag only
+      certificateOffset + CERTIFICATE.length - 1, // partial certificate
+    };
+    for (int length : truncatedLengths) {
+      byte[] truncated = Arrays.copyOf(valid, length);
+      Assert.assertThrows(
+          "truncated to " + length,
+          IllegalArgumentException.class,
+          () -> new Ctap1Session.RegistrationData(truncated));
+    }
+  }
+
+  @Test
+  public void rejectsKeyHandleLengthPastTheEnd() {
+    byte[] data = registrationData(KEY_HANDLE, CERTIFICATE);
+    data[1 + 65] = (byte) 0xFF;
+    Assert.assertThrows(
+        IllegalArgumentException.class, () -> new Ctap1Session.RegistrationData(data));
+  }
+
+  @Test
+  public void rejectsEmptyCertificate() {
+    // Nothing after the key handle
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            new Ctap1Session.RegistrationData(
+                registrationData(KEY_HANDLE, new byte[0], new byte[0])));
+    // A certificate TLV without a value
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            new Ctap1Session.RegistrationData(
+                registrationData(KEY_HANDLE, new byte[] {0x30, 0x00})));
+  }
+
+  @Test
+  public void rejectsMissingSignature() {
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            new Ctap1Session.RegistrationData(
+                registrationData(KEY_HANDLE, CERTIFICATE, new byte[0])));
+  }
+
+  @Test
+  public void rejectsInvalidCertificateLength() {
+    byte[][] certificates = {
+      {0x30, (byte) 0x84, (byte) 0x80, 0x00, 0x00, 0x00}, // negative as a 32-bit int
+      {0x30, (byte) 0x85, 0x00, 0x00, 0x00, 0x00, 0x01}, // more than 4 length bytes
+      {0x30, (byte) 0x80}, // indefinite length
+      {0x30, (byte) 0x82, 0x01}, // truncated length
+    };
+    for (byte[] certificate : certificates) {
+      byte[] data = registrationData(KEY_HANDLE, certificate, new byte[0]);
+      Assert.assertThrows(
+          Arrays.toString(certificate),
+          IllegalArgumentException.class,
+          () -> new Ctap1Session.RegistrationData(data));
+    }
+  }
+
+  /** Only the certificate's DER header is read; the signature is taken as is. */
+  @Test
+  public void readsCertificateByItsDerLength() {
+    byte[] certificate = new byte[3 + 128];
+    certificate[0] = 0x30;
+    certificate[1] = (byte) 0x81;
+    certificate[2] = (byte) 0x80;
+    byte[] signature = {0x30, 0x7F, 0x01};
+
+    Ctap1Session.RegistrationData registrationData =
+        new Ctap1Session.RegistrationData(registrationData(KEY_HANDLE, certificate, signature));
+
+    Assert.assertArrayEquals(certificate, registrationData.getCertificate());
+    Assert.assertArrayEquals(signature, registrationData.getSignature());
+  }
+
+  @Test
+  public void registerReportsMalformedResponseAsBadResponse() throws Exception {
+    SmartCardProtocol mock = mock(SmartCardProtocol.class);
+    when(mock.sendAndReceive(argThat(apdu -> apdu.getIns() == Ctap1Session.INS_REGISTER)))
+        .thenReturn(Arrays.copyOf(registrationData(KEY_HANDLE, CERTIFICATE), 10));
+    try (Ctap1Session session = new Ctap1Session(mock, null)) {
+      IOException e =
+          Assert.assertThrows(
+              IOException.class, () -> session.register(new byte[32], new byte[32]));
+      Assert.assertTrue(e.getCause() instanceof BadResponseException);
+    }
+  }
+
+  private static final byte[] KEY_HANDLE = filled(16, (byte) 0xD4);
+  private static final byte[] CERTIFICATE = new byte[] {0x30, 0x03, 0x02, 0x01, 0x2A};
+  private static final byte[] SIGNATURE =
+      new byte[] {0x30, 0x06, 0x02, 0x01, 0x2B, 0x02, 0x01, 0x2C};
+
+  private static byte[] registrationData(byte[] keyHandle, byte[] certificate) {
+    return registrationData(keyHandle, certificate, SIGNATURE);
+  }
+
+  private static byte[] registrationData(byte[] keyHandle, byte[] certificate, byte[] signature) {
+    return ByteBuffer.allocate(
+            1 + 65 + 1 + keyHandle.length + certificate.length + signature.length)
+        .put(Ctap1Session.RegistrationData.RESERVED_BYTE)
+        .put((byte) 0x04)
+        .put(filled(64, (byte) 0xB2))
+        .put((byte) keyHandle.length)
+        .put(keyHandle)
+        .put(certificate)
+        .put(signature)
+        .array();
   }
 
   private static byte[] filled(int length, byte value) {

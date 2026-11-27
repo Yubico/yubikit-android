@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.android.app.ui.yubiotp
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -24,6 +25,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.launch
+import androidx.core.content.IntentCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.MainViewModel
@@ -37,22 +39,25 @@ import com.yubico.yubikit.yubiotp.YubiOtpSlotConfiguration
 import org.bouncycastle.util.encoders.Hex
 
 class YubiOtpFragment : Fragment() {
-    class OtpContract : ActivityResultContract<Unit, String?>() {
+    /** Returns the OTP, the error reported by [OtpActivity], or null if the user cancelled. */
+    class OtpContract : ActivityResultContract<Unit, Result<String>?>() {
         override fun createIntent(context: Context, input: Unit): Intent = Intent(context, OtpActivity::class.java)
 
-        override fun parseResult(resultCode: Int, intent: Intent?): String? = intent?.getStringExtra(OtpActivity.EXTRA_OTP)
+        override fun parseResult(resultCode: Int, intent: Intent?): Result<String>? = when (resultCode) {
+            Activity.RESULT_OK -> intent?.getStringExtra(OtpActivity.EXTRA_OTP)?.let { Result.success(it) }
+
+            OtpActivity.RESULT_ERROR -> Result.failure(
+                intent?.let { IntentCompat.getSerializableExtra(it, OtpActivity.EXTRA_ERROR, Throwable::class.java) }
+                    ?: IllegalStateException("OTP could not be read"),
+            )
+
+            else -> null
+        }
     }
 
     private val requestOtp = registerForActivityResult(OtpContract()) {
         activityViewModel.setYubiKeyListenerEnabled(true)
-        viewModel.postResult(
-            Result.success(
-                when (it) {
-                    null -> "Cancelled by user"
-                    else -> "Read OTP: $it"
-                },
-            ),
-        )
+        viewModel.postResult(it?.map { otp -> "Read OTP: $otp" } ?: Result.success("Cancelled by user"))
     }
 
     private val activityViewModel: MainViewModel by activityViewModels()

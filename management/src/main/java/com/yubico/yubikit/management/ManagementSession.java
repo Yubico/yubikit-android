@@ -54,6 +54,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Application to get information about and configure a YubiKey via the Management Application.
  *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
+ *
  * @see <a href="https://developers.yubico.com/yubikey-manager/Config_Reference.html">
  *     https://developers.yubico.com/yubikey-manager/Config_Reference.html</a>
  */

@@ -211,6 +211,10 @@ try {
 }
 ----
 
+Session and protocol objects, such as `PivSession` or `SmartCardProtocol`, are not thread-safe
+either. Use each instance from one thread at a time, such as the thread running the
+`requestConnection` callback, or serialize access to it externally.
+
 
 === UI elements
 The module provides some re-usable components which can be useful for

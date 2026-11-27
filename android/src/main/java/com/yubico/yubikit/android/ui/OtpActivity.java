@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ public class OtpActivity extends YubiKeyPromptActivity {
           String credential = NdefUtils.getNdefPayload(((NfcYubiKeyDevice) device).readNdef());
           intent.putExtra(EXTRA_OTP, credential);
           callback.invoke(new Pair<>(RESULT_OK, intent));
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
           intent.putExtra(EXTRA_ERROR, e);
           callback.invoke(new Pair<>(RESULT_ERROR, intent));
         }

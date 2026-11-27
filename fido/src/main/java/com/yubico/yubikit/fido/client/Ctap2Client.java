@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.client;
 
+import static com.yubico.yubikit.fido.client.Utils.attestationResponse;
 import static com.yubico.yubikit.fido.client.Utils.checkUserId;
 import static com.yubico.yubikit.fido.client.Utils.getPubKeyCredParams;
 import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KEY;
@@ -245,7 +246,7 @@ public class Ctap2Client implements WebAuthnClient {
               AttestationObject.fromCredential(credential), options.getAttestation());
 
       AuthenticatorAttestationResponse response =
-          new AuthenticatorAttestationResponse(
+          attestationResponse(
               clientData.getClientDataJson(),
               ctap.getCachedInfo().getTransports(),
               attestationObject);

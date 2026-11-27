@@ -18,6 +18,7 @@ package com.yubico.yubikit.fido.client;
 
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
@@ -25,6 +26,8 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.ctap.Ctap1Session;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.webauthn.AttestationObject;
+import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
@@ -56,6 +59,21 @@ public class Utils {
     int length = options.getUser().getId().length;
     if (length < 1 || length > 64) {
       throw new ClientError(ClientError.Code.BAD_REQUEST, "user.id must be 1 to 64 bytes long");
+    }
+  }
+
+  /**
+   * Creates the attestation response, reporting a credential that cannot be read, such as a
+   * malformed COSE public key from the authenticator, as a bad response instead of an unchecked
+   * exception.
+   */
+  static AuthenticatorAttestationResponse attestationResponse(
+      byte[] clientDataJson, List<String> transports, AttestationObject attestationObject)
+      throws BadResponseException {
+    try {
+      return new AuthenticatorAttestationResponse(clientDataJson, transports, attestationObject);
+    } catch (ClassCastException | NullPointerException | IllegalArgumentException e) {
+      throw new BadResponseException("Malformed credential in makeCredential response", e);
     }
   }
 

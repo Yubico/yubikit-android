@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,10 @@ import java.io.Closeable;
  * <p>Subclasses should use their own type as the parameter T:
  *
  * <pre>{@code class FooSession extends ApplicationSession<FooSession>}</pre>
+ *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
  *
  * @param <T> the type of the subclass
  */

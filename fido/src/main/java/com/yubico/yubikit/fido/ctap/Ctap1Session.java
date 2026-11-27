@@ -1,5 +1,5 @@
 /*
- * Copyright (C)2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@ import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
-import com.yubico.yubikit.core.util.Tlv;
-import com.yubico.yubikit.core.util.Tlvs;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AttestedCredentialData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorData;
@@ -55,6 +53,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
@@ -64,6 +63,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>This class provides methods for U2F registration and authentication operations using the
  * legacy CTAP1 protocol, also known as FIDO U2F.
+ *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
  *
  * @see <a
  *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html">FIDO
@@ -167,7 +170,8 @@ public class Ctap1Session extends CtapSession {
    * @param clientParam SHA256 hash of the ClientData used for the request
    * @param appParam SHA256 hash of the app ID used for the request
    * @return the registration response from the authenticator
-   * @throws IOException if communication fails
+   * @throws IOException if communication fails, or the response is malformed (caused by a {@link
+   *     BadResponseException})
    * @throws ApduException if the command returns an error status
    * @see <a
    *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html#registration-messages">Registration
@@ -187,7 +191,12 @@ public class Ctap1Session extends CtapSession {
         ByteBuffer.allocate(clientParam.length + appParam.length).put(clientParam).put(appParam);
 
     byte[] response = backend.sendApdu(INS_REGISTER, (byte) 0, buffer.array(), null);
-    return new RegistrationData(response);
+    try {
+      return new RegistrationData(response);
+    } catch (IllegalArgumentException e) {
+      // Wrapped in IOException to keep the signature, as SmartCardProtocol does
+      throw new IOException(new BadResponseException("Malformed registration response", e));
+    }
   }
 
   /**
@@ -322,6 +331,8 @@ public class Ctap1Session extends CtapSession {
    */
   public static class RegistrationData {
     static final byte RESERVED_BYTE = 0x05;
+    private static final int PUBLIC_KEY_LENGTH = 65;
+    private static final byte CERTIFICATE_TAG = 0x30;
 
     private final byte[] data;
     private final byte[] publicKey;
@@ -341,45 +352,81 @@ public class Ctap1Session extends CtapSession {
       ByteBuffer reader = ByteBuffer.wrap(data);
 
       // Check reserved byte
-      if (reader.get() != RESERVED_BYTE) {
+      if (read(reader, 1, "reserved byte")[0] != RESERVED_BYTE) {
         throw new IllegalArgumentException("Reserved byte != 0x05");
       }
 
       // Read public key (65 bytes: 0x04 + 32-byte X + 32-byte Y for P-256)
-      publicKey = new byte[65];
-      reader.get(publicKey);
+      publicKey = read(reader, PUBLIC_KEY_LENGTH, "public key");
 
       // Read key handle length and key handle
-      int keyHandleLength = reader.get() & 0xFF;
-      keyHandle = new byte[keyHandleLength];
-      reader.get(keyHandle);
+      int keyHandleLength = read(reader, 1, "key handle length")[0] & 0xFF;
+      keyHandle = read(reader, keyHandleLength, "key handle");
 
       // Parse certificate
       certificate = parseCertificate(reader);
 
       // Remaining bytes are the signature
+      if (!reader.hasRemaining()) {
+        throw new IllegalArgumentException("Missing attestation signature");
+      }
       signature = new byte[reader.remaining()];
       reader.get(signature);
     }
 
     /**
-     * Parses an X.509 certificate from the buffer.
+     * Reads a field of a fixed length from the buffer.
+     *
+     * @throws IllegalArgumentException if fewer than {@code length} bytes remain
+     */
+    private static byte[] read(ByteBuffer reader, int length, String field) {
+      if (reader.remaining() < length) {
+        throw new IllegalArgumentException(
+            String.format(
+                Locale.ROOT,
+                "Truncated %s: %d bytes needed, %d remaining",
+                field,
+                length,
+                reader.remaining()));
+      }
+      byte[] value = new byte[length];
+      reader.get(value);
+      return value;
+    }
+
+    /**
+     * Reads the X.509 certificate from the buffer. Its DER header gives its length; the bytes after
+     * it are the signature.
      *
      * @param reader the buffer to read from
      * @return the DER-encoded certificate bytes
+     * @throws IllegalArgumentException if the certificate is missing, empty or truncated
+     * @see <a
+     *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html#registration-response-message-success">Registration
+     *     Response Message: Success</a>
      */
-    private byte[] parseCertificate(ByteBuffer reader) {
-      int startPos = reader.position();
-      byte[] remaining = new byte[reader.remaining()];
-      reader.get(remaining);
-
-      // Parse the first TLV (the certificate)
-      Tlv certTlv = Tlvs.decodeList(remaining).get(0);
-      byte[] cert = certTlv.getBytes();
-
-      // Move the buffer position forward by the certificate length
-      reader.position(startPos + cert.length);
-      return cert;
+    private static byte[] parseCertificate(ByteBuffer reader) {
+      int start = reader.position();
+      if (read(reader, 1, "certificate tag")[0] != CERTIFICATE_TAG) {
+        throw new IllegalArgumentException("Attestation certificate is not a DER SEQUENCE");
+      }
+      int length = read(reader, 1, "certificate length")[0] & 0xFF;
+      if (length > 0x80 && length <= 0x84) {
+        byte[] lengthBytes = read(reader, length - 0x80, "certificate length");
+        length = 0;
+        for (byte b : lengthBytes) {
+          length = (length << 8) | (b & 0xFF);
+        }
+      } else if (length >= 0x80) {
+        throw new IllegalArgumentException("Unsupported attestation certificate length");
+      }
+      if (length <= 0) {
+        throw new IllegalArgumentException("Empty attestation certificate");
+      }
+      read(reader, length, "certificate");
+      int end = reader.position();
+      reader.position(start);
+      return read(reader, end - start, "certificate");
     }
 
     /**

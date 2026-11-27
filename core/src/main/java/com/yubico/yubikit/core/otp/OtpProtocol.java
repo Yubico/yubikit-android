@@ -30,6 +30,13 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Support class for communication over an OtpConnection.
+ *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
+ */
 public class OtpProtocol implements Closeable {
 
   static final int FEATURE_RPT_SIZE = 8;

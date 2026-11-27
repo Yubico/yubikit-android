@@ -36,6 +36,30 @@
           instead of the raw CBOR maps, which failed with ClassCastException when read
   - fido: Cose.getPublicKey() rejects a COSE key whose key type does not match its
           algorithm; AuthenticatorAttestationResponse.getPublicKey() is then null
+  - core: NdefUtils rejects malformed NDEF records with IllegalArgumentException instead
+          of BufferUnderflowException or NegativeArraySizeException
+  - android: OtpActivity returns RESULT_ERROR for an invalid NDEF record instead of
+             crashing
+  - yubiotp: calculateHmacSha1 accepts an empty challenge, uses the first 64 bytes of a
+             longer one, and rejects null with IllegalArgumentException
+  - fido: a truncated or malformed CTAP1 registration response fails with
+          IllegalArgumentException, or from register() with an IOException caused by
+          BadResponseException, instead of an unchecked buffer or index error
+  - piv: getBioMetadata() fails with an IOException caused by BadResponseException when
+         the retries are missing; a missing configured or temporary PIN flag reads as false
+  - piv: getPinMetadata(), getPukMetadata(), getManagementKeyMetadata() and
+         getSlotMetadata() fail with an IOException caused by BadResponseException when
+         the response is malformed or a required value is missing or unknown
+  - core, fido, management, oath, openpgp, piv, yubiotp: session and protocol classes
+          document that they are not thread-safe
+  - fido-ui: NfcAntennaHint accepts iconBorderColor to draw a border around the antenna
+             indicator
+  - piv: getCertificate(), getObject() and generateKey() fail with BadResponseException,
+         and getSlotMetadata() with an IOException caused by it, for malformed certificate
+         or public key data instead of an unchecked exception
+  - fido: makeCredential fails with BadResponseException (over CTAP1, an IOException
+          caused by it) when the authenticator returns a malformed credential public key,
+          instead of an unchecked exception
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types

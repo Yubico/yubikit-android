@@ -43,6 +43,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
@@ -75,6 +76,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on
  * the smart card, through common transports like PKCS#11.
+ *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
  */
 public class PivSession extends ApplicationSession<PivSession> {
   // Features
@@ -689,7 +694,8 @@ public class PivSession extends ApplicationSession<PivSession> {
    * Reads metadata specific to YubiKey Bio multi-protocol.
    *
    * @return metadata about a slot
-   * @throws IOException in case of connection error
+   * @throws IOException in case of connection error, or if the response is malformed (caused by a
+   *     {@link BadResponseException})
    * @throws ApduException in case of an error response from the YubiKey
    * @throws UnsupportedOperationException in case the metadata cannot be retrieved
    */
@@ -697,12 +703,14 @@ public class PivSession extends ApplicationSession<PivSession> {
     logger.debug("Getting bio metadata");
     try {
       Map<Integer, byte[]> data =
-          Tlvs.decodeMap(
+          decodeMetadata(
               protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, SLOT_OCC_AUTH, null)));
+      byte[] retries = requireMetadata(data, TAG_METADATA_RETRIES, 1, "retries");
+      // A missing flag reads as false, as in yubikit (Rust)
       return new BioMetadata(
-          data.get(TAG_METADATA_BIO_CONFIGURED)[0] == 1,
-          data.get(TAG_METADATA_RETRIES)[0],
-          data.get(TAG_METADATA_TEMPORARY_PIN)[0] == 1);
+          isFlagSet(data.get(TAG_METADATA_BIO_CONFIGURED)),
+          retries[0],
+          isFlagSet(data.get(TAG_METADATA_TEMPORARY_PIN)));
     } catch (ApduException apduException) {
       short sw = apduException.getSw();
       if (sw == SW.REFERENCED_DATA_NOT_FOUND || sw == SW.INVALID_INSTRUCTION) {
@@ -711,6 +719,37 @@ public class PivSession extends ApplicationSession<PivSession> {
       }
       throw apduException;
     }
+  }
+
+  private static boolean isFlagSet(byte @Nullable [] value) {
+    return value != null && value.length > 0 && value[0] == 1;
+  }
+
+  /** Decodes a GET METADATA response, reporting malformed TLVs as a bad response. */
+  private static Map<Integer, byte[]> decodeMetadata(byte[] response) throws IOException {
+    try {
+      return Tlvs.decodeMap(response);
+    } catch (BufferUnderflowException | IllegalArgumentException e) {
+      throw badMetadata("Malformed metadata", e);
+    }
+  }
+
+  /** Returns the value of a metadata tag, which must be present with at least minLength bytes. */
+  private static byte[] requireMetadata(
+      Map<Integer, byte[]> data, int tag, int minLength, String name) throws IOException {
+    byte[] value = data.get(tag);
+    if (value == null || value.length < minLength) {
+      throw badMetadata("Metadata is missing the " + name, null);
+    }
+    return value;
+  }
+
+  private static IOException badMetadata(String message, @Nullable Exception cause) {
+    // Wrapped in IOException to keep the signatures, as SmartCardProtocol does
+    return new IOException(
+        cause == null
+            ? new BadResponseException(message)
+            : new BadResponseException(message, cause));
   }
 
   /**
@@ -920,7 +959,8 @@ public class PivSession extends ApplicationSession<PivSession> {
    * or later.
    *
    * @return metadata about the PIN
-   * @throws IOException in case of connection error
+   * @throws IOException in case of connection error, or if the response is malformed (caused by a
+   *     {@link BadResponseException})
    * @throws ApduException in case of an error response from the YubiKey
    */
   public PinMetadata getPinMetadata() throws IOException, ApduException {
@@ -936,7 +976,8 @@ public class PivSession extends ApplicationSession<PivSession> {
    * or later.
    *
    * @return metadata about the PUK
-   * @throws IOException in case of connection error
+   * @throws IOException in case of connection error, or if the response is malformed (caused by a
+   *     {@link BadResponseException})
    * @throws ApduException in case of an error response from the YubiKey
    */
   public PinMetadata getPukMetadata() throws IOException, ApduException {
@@ -947,10 +988,10 @@ public class PivSession extends ApplicationSession<PivSession> {
   private PinMetadata getPinPukMetadata(byte p2) throws IOException, ApduException {
     require(FEATURE_METADATA);
     Map<Integer, byte[]> data =
-        Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
-    byte[] retries = data.get(TAG_METADATA_RETRIES);
+        decodeMetadata(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
+    byte[] retries = requireMetadata(data, TAG_METADATA_RETRIES, 2, "retries");
     return new PinMetadata(
-        data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
+        requireMetadata(data, TAG_METADATA_IS_DEFAULT, 1, "default flag")[0] != 0,
         retries[INDEX_RETRIES_TOTAL],
         retries[INDEX_RETRIES_REMAINING]);
   }
@@ -963,21 +1004,29 @@ public class PivSession extends ApplicationSession<PivSession> {
    *
    * @return metadata about the card management key, such as the Touch policy and if the default
    *     value has been changed
-   * @throws IOException in case of connection error
+   * @throws IOException in case of connection error, or if the response is malformed (caused by a
+   *     {@link BadResponseException})
    * @throws ApduException in case of an error response from the YubiKey
    */
   public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException {
     logger.debug("Getting management key metadata");
     require(FEATURE_METADATA);
     Map<Integer, byte[]> data =
-        Tlvs.decodeMap(
+        decodeMetadata(
             protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, SLOT_CARD_MANAGEMENT, null)));
-    return new ManagementKeyMetadata(
-        data.containsKey(TAG_METADATA_ALGO)
-            ? ManagementKeyType.fromValue(data.get(TAG_METADATA_ALGO)[0])
-            : ManagementKeyType.TDES,
-        data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
-        TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY]));
+    boolean isDefault = requireMetadata(data, TAG_METADATA_IS_DEFAULT, 1, "default flag")[0] != 0;
+    byte[] policy = requireMetadata(data, TAG_METADATA_POLICY, 2, "policy");
+    try {
+      return new ManagementKeyMetadata(
+          data.containsKey(TAG_METADATA_ALGO)
+              ? ManagementKeyType.fromValue(
+                  requireMetadata(data, TAG_METADATA_ALGO, 1, "algorithm")[0])
+              : ManagementKeyType.TDES,
+          isDefault,
+          TouchPolicy.fromValue(policy[INDEX_TOUCH_POLICY]));
+    } catch (IllegalArgumentException e) {
+      throw badMetadata("Unknown value in management key metadata", e);
+    }
   }
 
   /** Get card management key type. */
@@ -993,21 +1042,39 @@ public class PivSession extends ApplicationSession<PivSession> {
    *
    * @param slot the slot to read metadata about
    * @return metadata about a slot
-   * @throws IOException in case of connection error
+   * @throws IOException in case of connection error, or if the response is malformed (caused by a
+   *     {@link BadResponseException})
    * @throws ApduException in case of an error response from the YubiKey
    */
   public SlotMetadata getSlotMetadata(Slot slot) throws IOException, ApduException {
     logger.debug("Getting metadata for slot {}", slot);
     require(FEATURE_METADATA);
     Map<Integer, byte[]> data =
-        Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
-    byte[] policy = data.get(TAG_METADATA_POLICY);
-    return new SlotMetadata(
-        KeyType.fromValue(data.get(TAG_METADATA_ALGO)[0]),
-        PinPolicy.fromValue(policy[INDEX_PIN_POLICY]),
-        TouchPolicy.fromValue(policy[INDEX_TOUCH_POLICY]),
-        data.get(TAG_METADATA_ORIGIN)[0] == ORIGIN_GENERATED,
-        data.get(TAG_METADATA_PUBLIC_KEY));
+        decodeMetadata(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
+    byte algorithm = requireMetadata(data, TAG_METADATA_ALGO, 1, "algorithm")[0];
+    byte[] policy = requireMetadata(data, TAG_METADATA_POLICY, 2, "policy");
+    boolean generated =
+        requireMetadata(data, TAG_METADATA_ORIGIN, 1, "origin")[0] == ORIGIN_GENERATED;
+    byte[] publicKey = requireMetadata(data, TAG_METADATA_PUBLIC_KEY, 1, "public key");
+    SlotMetadata metadata;
+    try {
+      metadata =
+          new SlotMetadata(
+              KeyType.fromValue(algorithm),
+              PinPolicy.fromValue(policy[INDEX_PIN_POLICY]),
+              TouchPolicy.fromValue(policy[INDEX_TOUCH_POLICY]),
+              generated,
+              publicKey);
+    } catch (IllegalArgumentException e) {
+      throw badMetadata("Unknown value in slot metadata", e);
+    }
+    try {
+      // Checked here, as in yubikit (Rust), so getPublicKeyValues() does not fail later
+      parsePublicKeyFromDevice(metadata.getKeyType(), publicKey);
+    } catch (IllegalArgumentException e) {
+      throw badMetadata("Malformed public key in slot metadata", e);
+    }
+    return metadata;
   }
 
   /**
@@ -1025,9 +1092,17 @@ public class PivSession extends ApplicationSession<PivSession> {
     logger.debug("Reading certificate in slot {}", slot);
     byte[] objectData = getObject(slot.objectId);
 
-    Map<Integer, byte[]> certData = Tlvs.decodeMap(objectData);
+    Map<Integer, byte[]> certData;
+    try {
+      certData = Tlvs.decodeMap(objectData);
+    } catch (BufferUnderflowException | IllegalArgumentException e) {
+      throw new BadResponseException("Malformed certificate data object", e);
+    }
     byte[] certInfo = certData.get(TAG_CERT_INFO);
     byte[] cert = certData.get(TAG_CERTIFICATE);
+    if (cert == null) {
+      throw new BadResponseException("Certificate data object has no certificate");
+    }
 
     boolean isCompressed = certInfo != null && certInfo.length > 0 && certInfo[0] != 0;
     if (isCompressed) {
@@ -1150,29 +1225,57 @@ public class PivSession extends ApplicationSession<PivSession> {
   }
 
   /* Parses a PublicKey from data returned from a YubiKey. */
+  /**
+   * Parses a public key as encoded by the YubiKey.
+   *
+   * @throws IllegalArgumentException if the encoding is malformed or does not match the key type
+   */
   static PublicKeyValues parsePublicKeyFromDevice(KeyType keyType, byte[] encoded) {
-    Map<Integer, byte[]> dataObjects = Tlvs.decodeMap(encoded);
+    Map<Integer, byte[]> dataObjects;
+    try {
+      dataObjects = Tlvs.decodeMap(encoded);
+    } catch (BufferUnderflowException e) {
+      throw new IllegalArgumentException("Malformed public key data", e);
+    }
 
     if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
-      BigInteger modulus = new BigInteger(1, dataObjects.get(0x81));
-      BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
+      BigInteger modulus = new BigInteger(1, requireKeyData(dataObjects, 0x81, "RSA modulus"));
+      BigInteger exponent = new BigInteger(1, requireKeyData(dataObjects, 0x82, "RSA exponent"));
+      if (modulus.bitLength() != keyType.params.bitLength) {
+        throw new IllegalArgumentException("RSA modulus size does not match " + keyType);
+      }
       return new PublicKeyValues.Rsa(modulus, exponent);
     } else if (keyType.params.algorithm == KeyType.Algorithm.MLDSA) {
       return new PublicKeyValues.MlDsa(
           ((KeyType.MlDsaKeyParams) keyType.params).getParameterValues(),
-          Objects.requireNonNull(dataObjects.get(TAG_PUBLIC_KEY_MLDSA), "Missing ML-DSA key"));
+          requireKeyData(dataObjects, TAG_PUBLIC_KEY_MLDSA, "ML-DSA key"));
     } else if (keyType.params.algorithm == KeyType.Algorithm.MLKEM) {
       return new PublicKeyValues.MlKem(
           ((KeyType.MlKemKeyParams) keyType.params).getParameterValues(),
-          Objects.requireNonNull(dataObjects.get(TAG_PUBLIC_KEY_MLKEM), "Missing ML-KEM key"));
+          requireKeyData(dataObjects, TAG_PUBLIC_KEY_MLKEM, "ML-KEM key"));
     } else {
+      EllipticCurveValues curve = ((KeyType.EcKeyParams) keyType.params).getCurveParams();
+      byte[] point = requireKeyData(dataObjects, 0x86, "public key");
+      int coordinateLength = (curve.getBitLength() + 7) / 8;
       if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
-        return new PublicKeyValues.Cv25519(
-            ((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
+        if (point.length != coordinateLength) {
+          throw new IllegalArgumentException("Invalid " + keyType + " public key length");
+        }
+        return new PublicKeyValues.Cv25519(curve, point);
       }
-      return PublicKeyValues.Ec.fromEncodedPoint(
-          ((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
+      if (point.length != 1 + 2 * coordinateLength) {
+        throw new IllegalArgumentException("Invalid " + keyType + " public key length");
+      }
+      return PublicKeyValues.Ec.fromEncodedPoint(curve, point);
     }
+  }
+
+  private static byte[] requireKeyData(Map<Integer, byte[]> dataObjects, int tag, String name) {
+    byte[] value = dataObjects.get(tag);
+    if (value == null || value.length == 0) {
+      throw new IllegalArgumentException("Public key data is missing the " + name);
+    }
+    return value;
   }
 
   /**
@@ -1278,7 +1381,11 @@ public class PivSession extends ApplicationSession<PivSession> {
                 new Tlv((byte) 0xac, Tlvs.encodeMap(tlvs)).getBytes()));
     logger.info("Private key generated in slot {} of type {}", slot, keyType);
     // Tag '7F49' contains data objects for RSA or ECC
-    return parsePublicKeyFromDevice(keyType, Tlvs.unpackValue(0x7F49, response));
+    try {
+      return parsePublicKeyFromDevice(keyType, Tlvs.unpackValue(0x7F49, response));
+    } catch (BufferUnderflowException | IllegalArgumentException e) {
+      throw new BadResponseException("Malformed public key in response", e);
+    }
   }
 
   /**
@@ -1435,7 +1542,11 @@ public class PivSession extends ApplicationSession<PivSession> {
     byte[] requestData = new Tlv(TAG_OBJ_ID, ObjectId.getBytes(objectId)).getBytes();
     byte[] responseData =
         protocol.sendAndReceive(new Apdu(0, INS_GET_DATA, 0x3f, 0xff, requestData));
-    return Tlvs.unpackValue(TAG_OBJ_DATA, responseData);
+    try {
+      return Tlvs.unpackValue(TAG_OBJ_DATA, responseData);
+    } catch (BufferUnderflowException | IllegalArgumentException e) {
+      throw new BadResponseException("Malformed data object", e);
+    }
   }
 
   /**

@@ -28,6 +28,13 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Support class for communication over a FidoConnection.
+ *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
+ */
 public class FidoProtocol implements Closeable {
 
   static final byte TYPE_INIT = (byte) 0x80;
