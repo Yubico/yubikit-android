@@ -54,6 +54,15 @@ public class FidoProtocolTest {
   private static final class Authenticator implements FidoConnection {
     private final List<byte[]> sent = new ArrayList<>();
     private final Deque<byte[]> toHost = new ArrayDeque<>();
+    private final int initReplyLength;
+
+    Authenticator() {
+      this(17);
+    }
+
+    Authenticator(int initReplyLength) {
+      this.initReplyLength = initReplyLength;
+    }
 
     @Override
     public void send(byte[] packet) {
@@ -67,7 +76,11 @@ public class FidoProtocolTest {
         ByteBuffer reply = ByteBuffer.allocate(17);
         reply.put(nonce).putInt(CHANNEL).put((byte) 2).put((byte) 5).put((byte) 8).put((byte) 0);
         reply.put((byte) 0x04);
-        queue(0xffffffff, (byte) 0x86, reply.array(), seq -> seq & 0x7f);
+        queue(
+            0xffffffff,
+            (byte) 0x86,
+            Arrays.copyOf(reply.array(), initReplyLength),
+            seq -> seq & 0x7f);
       }
     }
 
@@ -294,5 +307,56 @@ public class FidoProtocolTest {
             IOException.class,
             () -> protocol.sendAndReceive(CTAPHID_CBOR, new byte[] {0x04}, null));
     Assert.assertEquals("CTAPHID error: 06", error.getMessage());
+  }
+
+  @Test
+  public void testPacketsForOtherChannelsAreIgnored() throws IOException {
+    Authenticator authenticator = new Authenticator();
+    FidoProtocol protocol = open(authenticator);
+    authenticator.queue(0x0a0b0c0d, CTAPHID_CBOR, pattern(100), seq -> seq);
+    authenticator.queue(pattern(10));
+
+    Assert.assertArrayEquals(
+        pattern(10), protocol.sendAndReceive(CTAPHID_CBOR, new byte[] {0x04}, null));
+  }
+
+  @Test
+  public void testShortInitResponseIsRejected() {
+    IOException error = Assert.assertThrows(IOException.class, () -> open(new Authenticator(16)));
+    Assert.assertEquals("CTAPHID_INIT response is too short", error.getMessage());
+  }
+
+  @Test
+  public void testEmptyKeepAliveIsIgnored() throws IOException {
+    Authenticator authenticator = new Authenticator();
+    FidoProtocol protocol = open(authenticator);
+    authenticator.queue(CHANNEL, FidoProtocol.CTAPHID_KEEPALIVE, new byte[0], seq -> seq);
+    authenticator.queue(new byte[] {0x00});
+    List<Byte> statuses = new ArrayList<>();
+
+    protocol.sendAndReceive(
+        CTAPHID_CBOR,
+        new byte[] {0x04},
+        new CommandState() {
+          @Override
+          public void onKeepAliveStatus(byte status) {
+            statuses.add(status);
+          }
+        });
+
+    Assert.assertEquals(Collections.emptyList(), statuses);
+  }
+
+  @Test
+  public void testEmptyErrorIsReportedAsOther() throws IOException {
+    Authenticator authenticator = new Authenticator();
+    FidoProtocol protocol = open(authenticator);
+    authenticator.queue(CHANNEL, FidoProtocol.CTAPHID_ERROR, new byte[0], seq -> seq);
+
+    IOException error =
+        Assert.assertThrows(
+            IOException.class,
+            () -> protocol.sendAndReceive(CTAPHID_CBOR, new byte[] {0x04}, null));
+    Assert.assertEquals("CTAPHID error: 7f", error.getMessage());
   }
 }

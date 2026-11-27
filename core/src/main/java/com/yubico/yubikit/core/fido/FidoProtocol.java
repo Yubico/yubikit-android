@@ -43,11 +43,17 @@ public class FidoProtocol implements Closeable {
   static final byte CTAPHID_ERROR = TYPE_INIT | 0x3f;
   static final byte CTAPHID_KEEPALIVE = TYPE_INIT | 0x3b;
 
+  /** CTAPHID_ERROR code for an unspecified error, used when the error carries no code. */
+  private static final byte ERR_OTHER = 0x7f;
+
+  /** Nonce, channel ID, protocol version, three version bytes and capabilities. */
+  private static final int INIT_RESPONSE_LENGTH = 17;
+
   /**
    * Protocol capabilities
    *
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#usb-hid-init">CTAPHID_INIT</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#usb-hid-init">CTAPHID_INIT</a>
    */
   public static class Capability {
     public static final byte WINK = 0x01;
@@ -83,6 +89,9 @@ public class FidoProtocol implements Closeable {
 
     channelId = 0xffffffff;
     ByteBuffer buffer = ByteBuffer.wrap(sendAndReceive(CTAPHID_INIT, nonce, null));
+    if (buffer.remaining() < INIT_RESPONSE_LENGTH) {
+      throw new IOException("CTAPHID_INIT response is too short");
+    }
     byte[] responseNonce = new byte[nonce.length];
     buffer.get(responseNonce);
     if (!MessageDigest.isEqual(nonce, responseNonce)) {
@@ -149,8 +158,9 @@ public class FidoProtocol implements Closeable {
       }
       int responseChannel = packet.getInt();
       if (responseChannel != channelId) {
-        throw new IOException(
-            String.format("Wrong Channel ID. Expecting: %d, Got: %d", channelId, responseChannel));
+        // Other applications may use the device on their own channels; their packets are not ours
+        logger.debug("Ignoring packet for channel 0x{}", String.format("%08x", responseChannel));
+        continue;
       }
       if (response == null) {
         byte responseCmd = packet.get();
@@ -159,12 +169,13 @@ public class FidoProtocol implements Closeable {
         } else if (responseCmd == CTAPHID_KEEPALIVE) {
           // KEEPALIVE and ERROR carry BCNT 1 and one DATA byte, see
           // https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#usb-hid-keepalive
-          packet.getShort(); // BCNT
-          state.onKeepAliveStatus(packet.get());
+          if ((packet.getShort() & 0xFFFF) > 0) {
+            state.onKeepAliveStatus(packet.get());
+          }
           continue;
         } else if (responseCmd == CTAPHID_ERROR) {
-          packet.getShort(); // BCNT
-          throw new IOException(String.format("CTAPHID error: %02x", packet.get()));
+          byte error = (packet.getShort() & 0xFFFF) > 0 ? packet.get() : ERR_OTHER;
+          throw new IOException(String.format("CTAPHID error: %02x", error));
         } else {
           throw new IOException(
               String.format("Wrong response command. Expecting: %x, Got: %x", cmd, responseCmd));

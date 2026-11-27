@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * Implements Config commands.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorConfig">authenticatorConfig</a>
+ *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#authenticatorConfig">authenticatorConfig</a>
  */
 @SuppressWarnings("unused")
 public class Config {
@@ -121,7 +121,7 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#enable-enterprise-attestation">Enable
+   *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#enable-enterprise-attestation">Enable
    *     Enterprise Attestation</a>
    */
   public void enableEnterpriseAttestation() throws IOException, CommandException {
@@ -137,7 +137,7 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#toggle-alwaysUv">Toggle
+   *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#toggle-alwaysUv">Toggle
    *     Always Require User Verification</a>
    */
   public void toggleAlwaysUv() throws IOException, CommandException {
@@ -157,7 +157,7 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#setMinPINLength">Setting
+   *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#setMinPINLength">Setting
    *     a minimum PIN Length</a>
    */
   public void setMinPinLength(
@@ -189,7 +189,7 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#vendorPrototype">Vendor
+   *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#vendorPrototype">Vendor
    *     Prototype Command</a>
    */
   public Map<Integer, ?> vendorPrototype(
@@ -218,7 +218,7 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#vendorPrototype">Vendor
+   *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#vendorPrototype">Vendor
    *     Prototype Command</a>
    */
   public Map<Integer, ?> vendorPrototype(long vendorCommandId)

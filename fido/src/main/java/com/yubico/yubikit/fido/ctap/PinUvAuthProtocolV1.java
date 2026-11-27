@@ -45,9 +45,9 @@ import javax.crypto.spec.SecretKeySpec;
  * Implements PIN/UV Auth Protocol 1
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorClientPIN">authenticatorClientPIN</a>.
+ *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#authenticatorClientPIN">authenticatorClientPIN</a>.
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#pinProto1">PIN/UV
+ *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#pinProto1">PIN/UV
  *     Auth Protocol One</a>.
  */
 public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {

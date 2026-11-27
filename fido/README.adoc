@@ -2,7 +2,7 @@
 
 The FIDO module enables applications to authenticate WebAuthn credentials on a YubiKey.
 
-The module is based on the https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html[CTAP 2.3] and https://www.w3.org/TR/2026/REC-webauthn-3-20260825/[WebAuthn Level 3] specifications.
+The module is based on the https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html[CTAP 2.3] and https://www.w3.org/TR/2026/REC-webauthn-3-20260825/[WebAuthn Level 3] specifications.
 Its WebAuthn client is a building block for using a YubiKey from a WebAuthn client, not a complete WebAuthn client, and the module does not claim conformance to WebAuthn Level 3:
 
 * The application builds the client data (origin, `crossOrigin`, `topOrigin`) and passes the effective domain, so origin checks, public suffix checks and related origin requests are the application's responsibility, as is enforcing the request `timeout`.

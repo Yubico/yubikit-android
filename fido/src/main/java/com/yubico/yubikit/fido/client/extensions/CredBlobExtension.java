@@ -30,7 +30,7 @@ import org.jspecify.annotations.Nullable;
  * Implements the Credential Blob (credBlob) CTAP2 extension.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-credBlob-extension">Credential
+ *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#sctn-credBlob-extension">Credential
  *     Blob (credBlob)</a>
  */
 public class CredBlobExtension extends Extension {
