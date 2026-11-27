@@ -40,6 +40,45 @@ public class Cose {
   private static final Logger logger = LoggerFactory.getLogger(Cose.class);
 
   /**
+   * COSE key types.
+   *
+   * @see <a href="https://www.iana.org/assignments/cose/cose.xhtml#key-type">COSE Key Types</a>
+   */
+  private static final class KeyType {
+    static final int OKP = 1;
+    static final int EC2 = 2;
+    static final int RSA = 3;
+    static final int AKP = 7;
+  }
+
+  /**
+   * COSE algorithm identifiers.
+   *
+   * @see <a href="https://www.iana.org/assignments/cose/cose.xhtml#algorithms">COSE Algorithms</a>
+   */
+  private static final class Algorithm {
+    static final int EDDSA = -8;
+    static final int ED25519 = -19;
+    static final int ED448 = -53;
+    static final int ES256 = -7;
+    static final int ES384 = -35;
+    static final int ES512 = -36;
+    static final int ESP256 = -9;
+    static final int ESP384 = -51;
+    static final int ESP512 = -52;
+    static final int RS256 = -257;
+    static final int RS384 = -258;
+    static final int RS512 = -259;
+    static final int RS1 = -65535;
+    static final int PS256 = -37;
+    static final int PS384 = -38;
+    static final int PS512 = -39;
+    static final int ML_DSA_44 = -48;
+    static final int ML_DSA_65 = -49;
+    static final int ML_DSA_87 = -50;
+  }
+
+  /**
    * The COSE key type that each known algorithm requires. Algorithms that are not listed are not
    * checked.
    *
@@ -49,17 +88,34 @@ public class Cose {
 
   static {
     Map<Integer, Integer> keyTypes = new HashMap<>();
-    for (int alg : new int[] {-8, -19, -53}) { // EdDSA, Ed25519, Ed448
-      keyTypes.put(alg, 1); // OKP
+    for (int alg : new int[] {Algorithm.EDDSA, Algorithm.ED25519, Algorithm.ED448}) {
+      keyTypes.put(alg, KeyType.OKP);
     }
-    for (int alg : new int[] {-7, -35, -36}) { // ES256, ES384, ES512
-      keyTypes.put(alg, 2); // EC2
+    for (int alg :
+        new int[] {
+          Algorithm.ES256,
+          Algorithm.ES384,
+          Algorithm.ES512,
+          Algorithm.ESP256,
+          Algorithm.ESP384,
+          Algorithm.ESP512
+        }) {
+      keyTypes.put(alg, KeyType.EC2);
     }
-    for (int alg : new int[] {-257, -258, -259, -65535, -37, -38, -39}) { // RS*, PS*
-      keyTypes.put(alg, 3); // RSA
+    for (int alg :
+        new int[] {
+          Algorithm.RS256,
+          Algorithm.RS384,
+          Algorithm.RS512,
+          Algorithm.RS1,
+          Algorithm.PS256,
+          Algorithm.PS384,
+          Algorithm.PS512
+        }) {
+      keyTypes.put(alg, KeyType.RSA);
     }
-    for (int alg : new int[] {-48, -49, -50}) { // ML-DSA-44, ML-DSA-65, ML-DSA-87
-      keyTypes.put(alg, 7); // AKP
+    for (int alg : new int[] {Algorithm.ML_DSA_44, Algorithm.ML_DSA_65, Algorithm.ML_DSA_87}) {
+      keyTypes.put(alg, KeyType.AKP);
     }
     KEY_TYPE_BY_ALGORITHM = Collections.unmodifiableMap(keyTypes);
   }
@@ -88,16 +144,16 @@ public class Cose {
     }
     PublicKey publicKey;
     switch (kty) {
-      case 1:
+      case KeyType.OKP:
         publicKey = importCoseEdDsaPublicKey(cosePublicKey);
         break;
-      case 2:
+      case KeyType.EC2:
         publicKey = importCoseEcdsaPublicKey(cosePublicKey);
         break;
-      case 3:
+      case KeyType.RSA:
         publicKey = importCoseRsaPublicKey(cosePublicKey);
         break;
-      case 7:
+      case KeyType.AKP:
         publicKey = importCoseAkpPublicKey(cosePublicKey);
         break;
       default:
@@ -188,13 +244,13 @@ public class Cose {
 
     MlDsaParameterValues parameterValues;
     switch (alg) {
-      case -48:
+      case Algorithm.ML_DSA_44:
         parameterValues = MlDsaParameterValues.MLDSA_44;
         break;
-      case -49:
+      case Algorithm.ML_DSA_65:
         parameterValues = MlDsaParameterValues.MLDSA_65;
         break;
-      case -50:
+      case Algorithm.ML_DSA_87:
         parameterValues = MlDsaParameterValues.MLDSA_87;
         break;
       default:

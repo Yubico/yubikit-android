@@ -201,12 +201,34 @@ public class CoseTest {
     okpWithEs256.put(3, -7);
     Map<Integer, Object> ec2WithRs256 = CoseTestVectors.es256();
     ec2WithRs256.put(3, -257);
+    Map<Integer, Object> okpWithEsp256 = CoseTestVectors.eddsa();
+    okpWithEsp256.put(3, -9);
+    Map<Integer, Object> rsaWithEsp512 = CoseTestVectors.rs256();
+    rsaWithEsp512.put(3, -52);
     for (Map<Integer, Object> cose :
-        Arrays.asList(ec2WithMlDsa, rsaWithEs256, okpWithEs256, ec2WithRs256)) {
+        Arrays.asList(
+            ec2WithMlDsa, rsaWithEs256, okpWithEs256, ec2WithRs256, okpWithEsp256, rsaWithEsp512)) {
       IllegalArgumentException e =
           Assert.assertThrows(IllegalArgumentException.class, () -> Cose.getPublicKey(cose));
       Assert.assertTrue(e.getMessage(), e.getMessage().contains("does not match algorithm"));
     }
+  }
+
+  /** The fully specified ESP256, ESP384 and ESP512 identifiers are EC2 algorithms. */
+  @Test
+  public void getPublicKeyAcceptsFullySpecifiedEcdsaAlgorithms() throws Exception {
+    Map<Integer, Object> esp256 = CoseTestVectors.es256();
+    esp256.put(3, -9);
+    Map<Integer, Object> esp384 = CoseTestVectors.es384();
+    esp384.put(3, -51);
+    Map<Integer, Object> esp512 = CoseTestVectors.es512();
+    esp512.put(3, -52);
+    Assert.assertEquals(
+        CoseTestVectors.ES256_SPKI, Base64.toUrlSafeString(Cose.getPublicKey(esp256).getEncoded()));
+    Assert.assertEquals(
+        CoseTestVectors.ES384_SPKI, Base64.toUrlSafeString(Cose.getPublicKey(esp384).getEncoded()));
+    Assert.assertEquals(
+        CoseTestVectors.ES512_SPKI, Base64.toUrlSafeString(Cose.getPublicKey(esp512).getEncoded()));
   }
 
   /** Algorithms without a known key type are not checked, so such keys still parse by type. */
