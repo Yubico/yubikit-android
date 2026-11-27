@@ -55,6 +55,13 @@ public class Utils {
    * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-createCredential">Create
    *     a New Credential</a>
    */
+  static void checkUserId(PublicKeyCredentialCreationOptions options) throws ClientError {
+    int length = options.getUser().getId().length;
+    if (length < 1 || length > 64) {
+      throw new ClientError(ClientError.Code.BAD_REQUEST, "user.id must be 1 to 64 bytes long");
+    }
+  }
+
   /**
    * Creates the attestation response, reporting a credential that cannot be read, such as a
    * malformed COSE public key from the authenticator, as a bad response instead of an unchecked
@@ -67,13 +74,6 @@ public class Utils {
       return new AuthenticatorAttestationResponse(clientDataJson, transports, attestationObject);
     } catch (ClassCastException | NullPointerException | IllegalArgumentException e) {
       throw new BadResponseException("Malformed credential in makeCredential response", e);
-    }
-  }
-
-  static void checkUserId(PublicKeyCredentialCreationOptions options) throws ClientError {
-    int length = options.getUser().getId().length;
-    if (length < 1 || length > 64) {
-      throw new ClientError(ClientError.Code.BAD_REQUEST, "user.id must be 1 to 64 bytes long");
     }
   }
 
