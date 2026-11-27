@@ -6,8 +6,8 @@ yubikit = "3.3.1-SNAPSHOT"
 
 # --- Build toolchain ---
 java = "8"
-kotlin = "2.4.20"
-android-gradle = "9.3.3" # 9.4.0-alpha07 to 9.4.1 file instrumented assumption failures as <failure>; fixed in 9.5.0-alpha08
+kotlin = "2.4.21"
+android-gradle = "9.5.3"
 
 # --- AndroidX core ---
 androidx-annotation = "1.11.0"
@@ -25,8 +25,8 @@ webkit = "1.15.0" # needed for minSdk 23
 
 # --- AndroidX Lifecycle ---
 lifecycle-extensions = "2.2.0"
-lifecycle-viewmodel-compose = "2.11.0"
-lifecycle-viewmodel-ktx = "2.11.0"
+lifecycle-viewmodel-compose = "2.11.1"
+lifecycle-viewmodel-ktx = "2.11.1"
 
 # --- AndroidX Navigation ---
 navigation-fragment-ktx = "2.9.8" # 2.10.0+ requires minSdk 24
@@ -34,22 +34,22 @@ navigation-fragment-ktx = "2.9.8" # 2.10.0+ requires minSdk 24
 # --- Jetpack Compose ---
 activity-compose = "1.13.0"
 activity-ktx = "1.13.0"
-compose-bom = "2026.09.00"
+compose-bom = "2026.09.00" # 2026.11.01 (Compose 1.13) requires compileSdk 37.1
 material3 = "1.5.0-alpha25" # 1.5.0-alpha26+ requires minSdk 24 (material3-ripple)
-runtime-livedata = "1.12.1"
+runtime-livedata = "1.12.1" # 1.13.0+ requires compileSdk 37.1
 
 # --- Kotlin / KotlinX ---
 kotlinx-coroutines-android = "1.11.0"
-kotlinx-serialization-json = "1.11.0"
+kotlinx-serialization-json = "1.11.0" # 1.12.0+ needs kotlin-stdlib 2.4; AndroidDemo uses languageVersion 2.2
 
 # --- Logging ---
 logback-android = "3.0.0"
-logback-classic = "1.6.5"
+logback-classic = "1.6.8"
 slf4j-api = "2.0.20"
 slf4j-nop = "2.0.20"
 
 # --- Cryptography ---
-bcpkix-jdk15to18 = "1.86" # 1.85 duplicates asn1.iana in bcprov+bcutil
+bcpkix-jdk15to18 = "1.87" # 1.85 duplicates asn1.iana in bcprov+bcutil
 
 # --- Nullability annotations ---
 jspecify = "1.0.1"
@@ -67,15 +67,15 @@ hamcrest = "3.0"
 hamcrest-library = "3.0"
 junit-version = "4.13.2"
 kotlinx-coroutines-test = "1.11.0"
-mockito = "5.24.0"
+mockito = "5.25.0"
 mockito-kotlin = "6.4.0"
-robolectric = "4.17"
+robolectric = "4.18.1"
 turbine = "1.2.1"
 
 # --- Static analysis ---
 findsecbugs = "1.14.0"
-spotbugs-core = "4.10.4"
-spotless = "8.10.3"
+spotbugs-core = "4.10.5"
+spotless = "8.12.0"
 
 [libraries]
 
