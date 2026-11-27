@@ -60,6 +60,7 @@
   - fido: makeCredential fails with BadResponseException (over CTAP1, an IOException
           caused by it) when the authenticator returns a malformed credential public key,
           instead of an unchecked exception
+  - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.9.2)
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types
