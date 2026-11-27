@@ -34,6 +34,7 @@
           instead of the raw CBOR maps, which failed with ClassCastException when read
   - fido: Cose.getPublicKey() rejects a COSE key whose key type does not match its
           algorithm; AuthenticatorAttestationResponse.getPublicKey() is then null
+  - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.9.2)
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types
