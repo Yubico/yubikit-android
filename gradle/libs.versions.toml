@@ -2,7 +2,7 @@
 
 # --- Library ---
 # Published library version; the release workflow checks it against the release-candidate tag.
-yubikit = "3.3.1-SNAPSHOT"
+yubikit = "3.4.0"
 
 # --- Build toolchain ---
 java = "8"
