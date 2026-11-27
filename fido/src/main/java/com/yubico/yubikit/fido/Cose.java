@@ -63,6 +63,9 @@ public class Cose {
     static final int ES256 = -7;
     static final int ES384 = -35;
     static final int ES512 = -36;
+    static final int ESP256 = -9;
+    static final int ESP384 = -51;
+    static final int ESP512 = -52;
     static final int RS256 = -257;
     static final int RS384 = -258;
     static final int RS512 = -259;
@@ -88,7 +91,15 @@ public class Cose {
     for (int alg : new int[] {Algorithm.EDDSA, Algorithm.ED25519, Algorithm.ED448}) {
       keyTypes.put(alg, KeyType.OKP);
     }
-    for (int alg : new int[] {Algorithm.ES256, Algorithm.ES384, Algorithm.ES512}) {
+    for (int alg :
+        new int[] {
+          Algorithm.ES256,
+          Algorithm.ES384,
+          Algorithm.ES512,
+          Algorithm.ESP256,
+          Algorithm.ESP384,
+          Algorithm.ESP512
+        }) {
       keyTypes.put(alg, KeyType.EC2);
     }
     for (int alg :
