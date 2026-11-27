@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -187,5 +188,33 @@ public class CoseTest {
     Map<Integer, Object> cose = akpKey(-48, rawKey(1312));
     cose.put(1, 99);
     Cose.getPublicKey(cose);
+  }
+
+  /** A key whose type does not match its algorithm is rejected instead of parsed by its type. */
+  @Test
+  public void getPublicKeyRejectsKeyTypeNotMatchingAlgorithm() {
+    Map<Integer, Object> ec2WithMlDsa = CoseTestVectors.es256();
+    ec2WithMlDsa.put(3, -48);
+    Map<Integer, Object> rsaWithEs256 = CoseTestVectors.rs256();
+    rsaWithEs256.put(3, -7);
+    Map<Integer, Object> okpWithEs256 = CoseTestVectors.eddsa();
+    okpWithEs256.put(3, -7);
+    Map<Integer, Object> ec2WithRs256 = CoseTestVectors.es256();
+    ec2WithRs256.put(3, -257);
+    for (Map<Integer, Object> cose :
+        Arrays.asList(ec2WithMlDsa, rsaWithEs256, okpWithEs256, ec2WithRs256)) {
+      IllegalArgumentException e =
+          Assert.assertThrows(IllegalArgumentException.class, () -> Cose.getPublicKey(cose));
+      Assert.assertTrue(e.getMessage(), e.getMessage().contains("does not match algorithm"));
+    }
+  }
+
+  /** Algorithms without a known key type are not checked, so such keys still parse by type. */
+  @Test
+  public void getPublicKeyDoesNotCheckUnknownAlgorithms() throws Exception {
+    Map<Integer, Object> cose = CoseTestVectors.es256();
+    cose.put(3, -65539);
+    Assert.assertEquals(
+        CoseTestVectors.ES256_SPKI, Base64.toUrlSafeString(Cose.getPublicKey(cose).getEncoded()));
   }
 }
