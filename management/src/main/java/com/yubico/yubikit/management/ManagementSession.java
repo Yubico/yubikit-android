@@ -80,12 +80,17 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
   public static final Feature<ManagementSession> FEATURE_DEVICE_RESET =
       new Feature.Versioned<>("Device Reset", 5, 6, 0);
 
+  /** Support for reading storage information. */
+  public static final Feature<ManagementSession> FEATURE_STORAGE_INFO =
+      new Feature.Versioned<>("Storage Info", 6, 0, 0);
+
   // Smart card command constants
   static final byte OTP_INS_CONFIG = 0x01;
   static final byte INS_READ_CONFIG = 0x1d;
   static final byte INS_WRITE_CONFIG = 0x1c;
   static final byte INS_SET_MODE = 0x16;
   static final byte INS_DEVICE_RESET = 0x1f;
+  static final byte INS_READ_STORAGE_INFO = 0x30;
   static final byte P1_DEVICE_CONFIG = 0x11;
 
   // DeviceInfo TLV tags
@@ -181,6 +186,12 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             void deviceReset() {
               throw new UnsupportedOperationException("deviceReset not supported on YubiKey NEO");
             }
+
+            @Override
+            byte[] readStorageInfo() {
+              throw new UnsupportedOperationException(
+                  "readStorageInfo not supported on YubiKey NEO");
+            }
           };
     } else {
       backend =
@@ -204,6 +215,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             @Override
             void deviceReset() throws IOException, CommandException {
               delegate.sendAndReceive(new Apdu(0, INS_DEVICE_RESET, 0, 0, null));
+            }
+
+            @Override
+            byte[] readStorageInfo() throws IOException, CommandException {
+              return delegate.sendAndReceive(new Apdu(0, INS_READ_STORAGE_INFO, 0, 0, null));
             }
           };
     }
@@ -259,6 +275,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
           void deviceReset() {
             throw new UnsupportedOperationException("deviceReset is only available over CCID");
           }
+
+          @Override
+          byte[] readStorageInfo() {
+            throw new UnsupportedOperationException("readStorageInfo is only available over CCID");
+          }
         };
     this.version = getQualifiedVersion(version);
     logger.debug("Management session initialized for OtpConnection, version={}", getVersion());
@@ -305,6 +326,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
           @Override
           void deviceReset() {
             throw new UnsupportedOperationException("deviceReset is only available over CCID");
+          }
+
+          @Override
+          byte[] readStorageInfo() {
+            throw new UnsupportedOperationException("readStorageInfo is only available over CCID");
           }
         };
     this.version = getQualifiedVersion(version);
@@ -511,6 +537,28 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     logger.info("Device reset");
   }
 
+  /**
+   * Read shared-storage statistics from the YubiKey.
+   *
+   * <p>This functionality requires support for {@link #FEATURE_STORAGE_INFO}, available on firmware
+   * 6.0.0 or later, and is only available over a {@link SmartCardConnection}. Unsupported cases are
+   * rejected without sending a command.
+   *
+   * <p>The entry with id {@link StorageInfo#ID_FREE} reports the free object slots and free storage
+   * pages. Other ids are object types defined by the firmware. See {@link StorageInfo}.
+   *
+   * @return the storage information, with entries in the order reported by the device
+   * @throws IOException in case of connection error
+   * @throws CommandException in case of error response
+   * @throws BadResponseException if the response is malformed
+   * @throws UnsupportedOperationException if the firmware or connection type does not support this
+   */
+  public StorageInfo readStorageInfo() throws IOException, CommandException {
+    require(FEATURE_STORAGE_INFO);
+    logger.debug("Reading storage info");
+    return StorageInfo.parse(backend.readStorageInfo());
+  }
+
   private abstract static class Backend<T extends Closeable> implements Closeable {
     protected final T delegate;
 
@@ -529,6 +577,8 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     abstract void setMode(byte[] data) throws IOException, CommandException;
 
     abstract void deviceReset() throws IOException, CommandException;
+
+    abstract byte[] readStorageInfo() throws IOException, CommandException;
 
     @Override
     public void close() throws IOException {

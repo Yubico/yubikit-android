@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,15 @@ public class TestData {
 
   public static final PublicKeyCredentialParameters PUB_KEY_CRED_PARAMS_EDDSA =
       new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -8);
+
+  public static final PublicKeyCredentialParameters PUB_KEY_CRED_PARAMS_MLDSA44 =
+      new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -48);
+
+  public static final PublicKeyCredentialParameters PUB_KEY_CRED_PARAMS_MLDSA65 =
+      new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -49);
+
+  public static final PublicKeyCredentialParameters PUB_KEY_CRED_PARAMS_MLDSA87 =
+      new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -50);
 
   // Constructs a test client data JSON for WebAuthn operations.
   private static byte[] createTestClientDataJson(String type) {

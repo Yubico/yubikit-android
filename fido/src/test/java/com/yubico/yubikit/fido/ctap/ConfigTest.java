@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.Test;
@@ -98,6 +99,20 @@ public class ConfigTest {
     Ctap2Session session = session(info("09" + transports + "181a" + transports, 2));
     assertEquals(Arrays.asList("usb", "nfc"), session.getCachedInfo().getTransports());
     assertEquals(Arrays.asList("usb", "nfc"), session.getCachedInfo().getTransportsForReset());
+  }
+
+  @Test
+  public void getInfoParsesAlgorithms() throws Exception {
+    // 0x0A algorithms: [{"alg": -7, "type": "public-key"}, 1, {"alg": -48, "type": "public-key"}]
+    String publicKey = "64" + "74797065" + "6a" + "7075626c69632d6b6579";
+    String algorithms =
+        "83" + "a2" + "63616c67" + "26" + publicKey + "01" + "a2" + "63616c67" + "382f" + publicKey;
+    Ctap2Session session = session(info("0a" + algorithms, 1));
+    assertEquals(
+        Arrays.asList(
+            new PublicKeyCredentialParameters("public-key", -7),
+            new PublicKeyCredentialParameters("public-key", -48)),
+        session.getCachedInfo().getAlgorithms());
   }
 
   @Test

@@ -37,4 +37,9 @@ public class ManagementTests extends ManagementInstrumentedTests {
   public void testReportedName() throws Throwable {
     withManagementSession(ManagementDeviceTests::testReportedName);
   }
+
+  @Test
+  public void testStorageInfo() throws Throwable {
+    withManagementSession(ManagementDeviceTests::testStorageInfo);
+  }
 }

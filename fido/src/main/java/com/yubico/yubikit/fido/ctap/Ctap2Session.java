@@ -34,6 +34,7 @@ import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -861,6 +862,27 @@ public class Ctap2Session extends Ctap1Session {
       return result;
     }
 
+    /** Returns the credential parameters of a CBOR array, dropping entries that are not valid. */
+    @SuppressWarnings("unchecked")
+    private static List<PublicKeyCredentialParameters> toCredentialParameters(
+        @Nullable Object values) {
+      List<PublicKeyCredentialParameters> result = new ArrayList<>();
+      if (values instanceof List) {
+        for (Object value : (List<?>) values) {
+          if (value instanceof Map) {
+            try {
+              result.add(
+                  PublicKeyCredentialParameters.fromMap(
+                      (Map<String, ?>) value, SerializationType.CBOR));
+            } catch (ClassCastException | NullPointerException | IllegalArgumentException e) {
+              logger.debug("Ignoring invalid algorithm entry in authenticatorGetInfo");
+            }
+          }
+        }
+      }
+      return result;
+    }
+
     @SuppressWarnings("unchecked")
     private static InfoData fromData(Map<Integer, ?> data) {
       return new InfoData(
@@ -879,9 +901,7 @@ public class Ctap2Session extends Ctap1Session {
           (Integer) data.get(RESULT_MAX_CREDS_IN_LIST),
           (Integer) data.get(RESULT_MAX_CRED_ID_LENGTH),
           toStringList(data.get(RESULT_TRANSPORTS)),
-          data.containsKey(RESULT_ALGORITHMS)
-              ? (List<PublicKeyCredentialParameters>) data.get(RESULT_ALGORITHMS)
-              : Collections.emptyList(),
+          toCredentialParameters(data.get(RESULT_ALGORITHMS)),
           data.containsKey(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY)
               ? (Integer) data.get(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY)
               : 0,

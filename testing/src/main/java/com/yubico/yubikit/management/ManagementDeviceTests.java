@@ -48,4 +48,20 @@ public class ManagementDeviceTests {
     Assert.assertFalse(name.isEmpty());
     Assert.assertEquals(name, DeviceUtil.getName(info, null));
   }
+
+  public static void testStorageInfo(ManagementSession managementSession) throws Exception {
+    Assume.assumeTrue(managementSession.supports(ManagementSession.FEATURE_STORAGE_INFO));
+
+    StorageInfo info;
+    try {
+      info = managementSession.readStorageInfo();
+    } catch (UnsupportedOperationException e) {
+      // The firmware supports it, so the session is not over a SmartCardConnection.
+      Assume.assumeNoException("Storage info requires a SmartCardConnection", e);
+      return;
+    }
+
+    Assert.assertNotNull(
+        "The device does not report free storage", info.getEntry(StorageInfo.ID_FREE));
+  }
 }
